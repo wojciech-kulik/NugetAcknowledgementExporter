@@ -7,39 +7,112 @@ using System.Xml;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using NDesk.Options;
 
 namespace NugetAcknowledgementExporter
 {
     class Program
     {
+        static string ProjectDirectory = "";
+        static string OutputDirectory = null;
+        static bool GenerateJson = true;
+        static bool GenerateTxt = true;
+        static bool ShowHelp = false;
+
         static async Task Main(string[] args)
         {
-            if (args.Length == 0 || !Directory.Exists(args[0]))
+            // CHECK ARGUMENTS
+            if (!ParseArguments(args) || ShowHelp) return;
+
+            if (string.IsNullOrWhiteSpace(ProjectDirectory) || !Directory.Exists(ProjectDirectory))
             {
-                Console.WriteLine("Please specify project directory");
+                Console.WriteLine("Please specify project directory. For more information use --help.");
                 return;
             }
 
-            var projects = FindAllCSProjs(args[0]);
+            // FIND ALL CSPROJ FILES
+            Console.WriteLine($"Searching for CSPROJ files in {ProjectDirectory}...");
+            var projects = FindAllCSProjs(ProjectDirectory);
+            Console.WriteLine($"Found {projects.Count} projects");
+            if (projects.Count == 0)
+            {
+                Console.WriteLine("Could not find any project file.");
+                return;
+            }
+
+            // PARSE NUGET PACKAGES
             var includedPackages = projects
                 .SelectMany(path => GetIncludedPackages(path))
                 .Where(x => !IsExcluded(x))
                 .Distinct(new NugetPackageEqualityComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
-
+            if (includedPackages.Count == 0)
+            {
+                Console.WriteLine("Could not find any NuGet packages.");
+                return;
+            }
             Console.WriteLine($"Detected {includedPackages.Count} nuget packages");
 
+            // DOWNLOAD LICENSES AND EXTRACT NUGET PACKAGE DETAILS
             Console.WriteLine("Downloading licenses...");
-            await FillPackagesDetails(includedPackages);
+            try
+            {
+                await FillPackagesDetails(includedPackages);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Please check if `nuget` command line tool is installed");
+            }
 
-            Console.WriteLine("Exporting project_packages.json...");
-            ExportToJson(includedPackages);
+            // EXPORT JSON FILE
+            if (GenerateJson)
+            {
+                Console.WriteLine("Exporting project_packages.json...");
+                ExportToJson(includedPackages);
+            }
 
-            Console.WriteLine("Exporting acknowledgements.txt...");
-            ExportAcknowledgements(includedPackages);
+            // EXPORT TXT FILE
+            if (GenerateTxt)
+            {
+                Console.WriteLine("Exporting acknowledgements.txt...");
+                ExportAcknowledgements(includedPackages);
+            }
 
             Console.WriteLine($"Finished exporting acknowledgements for {includedPackages.Count} packages");
+        }
+
+        static bool ParseArguments(string[] args)
+        {
+            var options = new OptionSet {
+                { "o|output=", "directory where generated files will be saved (by default project directory)", x => OutputDirectory = x },
+                { "sj|skipJson",  "skips generating json file with acknowledgements", v => GenerateJson = v == null },
+                { "st|skipTxt",  "skips generating text file with acknowledgements", v => GenerateTxt = v == null },
+                { "h|help",  "\tshows all available parameters", v => ShowHelp = v != null },
+            };
+
+            try
+            {
+                ProjectDirectory = options.Parse(args)?.FirstOrDefault();
+                OutputDirectory ??= ProjectDirectory;
+
+                if (ShowHelp)
+                {
+                    Console.WriteLine("\nNugetAcknowledgementExporter exports all used NuGet packages to JSON file and TXT file which can be included within an application. It also downloads associated licenses.");
+                    Console.WriteLine("\nUsage: NugetAcknowledgementExporter <project directory> [args]");
+                    Console.WriteLine("\nAvailable parameters:");
+                    options.ToList().ForEach(x => Console.WriteLine($"\t{x.Prototype}\t\t{x.Description}"));
+                }
+
+                return true;
+            }
+            catch (OptionException e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Try `NugetAcknowledgementExporter --help' for more information.");
+                return false;
+            }
         }
 
         static string GetNugetCachePath()
@@ -47,9 +120,17 @@ namespace NugetAcknowledgementExporter
             var nugetLists = "nuget locals all -list".Bash();
             var globalPackages = nugetLists.Split('\n').FirstOrDefault(x => x.StartsWith("global-packages: "));
 
-            if (string.IsNullOrWhiteSpace(globalPackages)) return null;
+            if (string.IsNullOrWhiteSpace(globalPackages))
+            {
+                throw new InvalidOperationException("Could not get NuGet cache directory (error: 1)");
+            }
 
             var path = globalPackages.Substring("global-packages: ".Length).Trim();
+            if (!Directory.Exists(path))
+            {
+                throw new InvalidOperationException("Could not get NuGet cache directory (error: 2)");
+            }
+
             return path;
         }
 
@@ -198,7 +279,8 @@ namespace NugetAcknowledgementExporter
         static void ExportToJson(List<NugetPackage> packages)
         {
             var json = JsonConvert.SerializeObject(packages, Newtonsoft.Json.Formatting.Indented);
-            File.WriteAllText("project_packages.json", json);
+            var path = Path.Combine(OutputDirectory, "project_packages.json");
+            File.WriteAllText(path, json);
         }
 
         static void ExportAcknowledgements(List<NugetPackage> packages)
@@ -224,7 +306,8 @@ namespace NugetAcknowledgementExporter
                 result = result.Replace("\n\n\n", "\n\n");
             }
 
-            File.WriteAllText("acknowledgements.txt", result);
+            var path = Path.Combine(OutputDirectory, "acknowledgements.txt");
+            File.WriteAllText(path, result);
         }
 
         static string MITLicense(string authors)
