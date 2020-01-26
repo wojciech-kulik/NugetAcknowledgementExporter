@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NugetAcknowledgementExporter</id>
-    <version>0.9.0</version>
+    <version>0.9.1</version>
     <title>NugetAcknowledgementExporter</title>
     <authors>Wojciech Kulik</authors>
     <owners>Wojciech Kulik</owners>
@@ -16,6 +16,6 @@
     <tags>acknowledgement license export library</tags>
   </metadata>
   <files>
-    <file src="..\bin\Release\netcoreapp3.1\*.*" target="bin" exclude="**\*.log" />
+    <file src="..\bin\Release\netcoreapp3.1\*.*" target="tools" exclude="**\*.log" />
   </files>
 </package>
