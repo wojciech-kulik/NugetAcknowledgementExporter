@@ -72,7 +72,8 @@ dotnet run -- "/Users/YYY/repositories/my-project/source" -output="/Users/YYY/De
 or once it's built, you can navigate to binary and run it directly: 
 
 ```bash
-./NugetAcknowledgementExporter "/Users/YYY/repositories/my-project/source" -output="/Users/YYY/Desktop/"
+MacOS: ./NugetAcknowledgementExporter "/Users/YYY/repositories/my-project/source" -output="/Users/YYY/Desktop"
+Windows: NugetAcknowledgementExporter "C:\Users\YYY\repositories\my-project\source" -output="C:\Users\YYY\Desktop"
 ```
 
 ## Output
