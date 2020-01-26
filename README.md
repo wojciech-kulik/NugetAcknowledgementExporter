@@ -114,4 +114,7 @@ of this software and associated documentation files (the "Software"), (...)
 
 ## TODO
 - [ ] More testing
-- [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache
+- [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache  
+
+<br>
+<a href="https://www.buymeacoffee.com/WojciechKulik" target="_blank"><img src="https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
