@@ -1,7 +1,7 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetAcknowledgementExporter", "NugetAcknowledgementExporter.csproj", "{0FA7F4D9-5EE5-42C8-9342-FD48C0593C83}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetAcknowledgementExporter", "NugetAcknowledgementExporter.csproj", "{59217C43-7D4A-49C6-A4A4-2E58CEE15C54}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,9 +9,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0FA7F4D9-5EE5-42C8-9342-FD48C0593C83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0FA7F4D9-5EE5-42C8-9342-FD48C0593C83}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0FA7F4D9-5EE5-42C8-9342-FD48C0593C83}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0FA7F4D9-5EE5-42C8-9342-FD48C0593C83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59217C43-7D4A-49C6-A4A4-2E58CEE15C54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59217C43-7D4A-49C6-A4A4-2E58CEE15C54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59217C43-7D4A-49C6-A4A4-2E58CEE15C54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59217C43-7D4A-49C6-A4A4-2E58CEE15C54}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

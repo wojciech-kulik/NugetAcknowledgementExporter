@@ -23,6 +23,7 @@ namespace NugetAcknowledgementExporter
             var projects = FindAllCSProjs(args[0]);
             var includedPackages = projects
                 .SelectMany(path => GetIncludedPackages(path))
+                .Where(x => !IsExcluded(x))
                 .Distinct(new NugetPackageEqualityComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
@@ -38,7 +39,7 @@ namespace NugetAcknowledgementExporter
             Console.WriteLine("Exporting acknowledgements.txt...");
             ExportAcknowledgements(includedPackages);
 
-            Console.WriteLine("Finished");
+            Console.WriteLine($"Finished exporting acknowledgements for {includedPackages.Count} packages");
         }
 
         static string GetNugetCachePath()
@@ -84,7 +85,35 @@ namespace NugetAcknowledgementExporter
                 Version = x.Groups[2].Value
             }));
 
+            packages.AddRange(GetPackagesFromConfig(csproj));
+
             return packages;
+        }
+
+        static List<NugetPackage> GetPackagesFromConfig(string csproj)
+        {
+            var configFile = Path.Combine(Path.GetDirectoryName(csproj), "packages.config");
+            if (!File.Exists(configFile))
+            {
+                return new List<NugetPackage>();
+            }
+
+            var regex = new Regex("package id=\"([^\"]+)\" version=\"([^\"]+)\"");
+            var file = File.ReadAllText(configFile);
+
+            var packages = regex.Matches(file).Select(x => new NugetPackage
+            {
+                Name = x.Groups[1].Value,
+                Version = x.Groups[2].Value
+            }).ToList();
+
+            return packages;
+        }
+
+        static bool IsExcluded(NugetPackage package)
+        {
+            var excluded = new[] { "Microsoft", "System", "NETStandard", "runtime." };
+            return excluded.Any(x => package.Name.StartsWith(x));
         }
 
         static async Task FillPackagesDetails(List<NugetPackage> packages)
@@ -93,39 +122,51 @@ namespace NugetAcknowledgementExporter
 
             foreach (var package in packages)
             {
-                var fileName = $"{package.Name.ToLower()}.nuspec";
-                var specFilePath = Path.Combine(nugetCache, package.Name.ToLower(), package.Version, fileName);
-
-                var spec = new XmlDocument();
-                spec.Load(specFilePath);
-                var metadata = spec.DocumentElement["metadata"];
-
-                package.Authors = metadata["authors"].InnerText;
-                package.ProjectUrl = metadata["projectUrl"].InnerText;
-                package.LicenseUrl = metadata["licenseUrl"].InnerText;
-
-                using var httpClient = new HttpClient();
-
-                var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.LicenseUrl));
-                package.LicenseUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
-
-                headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.ProjectUrl));
-                package.ProjectUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
-
-                var lowerLicenseUrl = package.LicenseUrl.ToLowerInvariant();
-                if (lowerLicenseUrl.Contains("licenses.nuget.org/mit"))
+                try
                 {
-                    package.License = MITLicense(package.Authors);
+                    var fileName = $"{package.Name.ToLower()}.nuspec";
+                    var specFilePath = Path.Combine(nugetCache, package.Name.ToLower(), package.Version, fileName);
+
+                    var spec = new XmlDocument();
+                    spec.Load(specFilePath);
+                    var metadata = spec.DocumentElement["metadata"];
+
+                    package.Authors = metadata["authors"].InnerText;
+                    package.ProjectUrl = metadata["projectUrl"].InnerText;
+                    package.LicenseUrl = metadata["licenseUrl"].InnerText;
+
+                    using var httpClient = new HttpClient();
+
+                    var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.LicenseUrl));
+                    package.LicenseUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
+
+                    try
+                    {
+                        headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.ProjectUrl));
+                        package.ProjectUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
+                    }
+                    catch { }
+
+                    var lowerLicenseUrl = package.LicenseUrl.ToLowerInvariant();
+                    if (lowerLicenseUrl.Contains("licenses.nuget.org/mit"))
+                    {
+                        package.License = MITLicense(package.Authors);
+                    }
+                    else if (!lowerLicenseUrl.Contains("github.com") &&
+                             !lowerLicenseUrl.EndsWith(".txt") &&
+                             !lowerLicenseUrl.EndsWith(".md") &&
+                             !lowerLicenseUrl.Contains("raw.githubusercontent.com"))
+                    {
+                        package.License = "(custom)";
+                    }
+                    else
+                    {
+                        package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
+                    }
                 }
-                else if (!lowerLicenseUrl.Contains("github.com") &&
-                    !lowerLicenseUrl.EndsWith(".txt") &&
-                    !lowerLicenseUrl.EndsWith(".md"))
+                catch
                 {
-                    package.License = "(custom)";
-                }
-                else
-                {
-                    package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
+                    Console.WriteLine($"Could not download license for {package.Name} (url: {package.LicenseUrl})");
                 }
             }
         }
