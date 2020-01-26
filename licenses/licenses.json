@@ -1,0 +1,15 @@
+[
+	/* YOU CAN ADD HERE CUSTOM LICENSES WHICH CAN'T BE FOUND/PARSED BY THIS TOOL */
+	{
+		"packageName": "Crashlytics", /* matching by package name */
+		"file": "fabric.txt"
+	},
+	{
+		"packageName": "Answers", /* matching by package name */
+		"file": "fabric.txt"
+	},
+	{
+		"licenseUrl": "https://fabric.io/terms", /* matching by license url */
+		"file": "fabric.txt"
+	}
+]

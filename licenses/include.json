@@ -1,0 +1,14 @@
+[
+  /* YOU CAN ADD HERE NUGET PACKAGES WHICH COULD NOT BE FOUND/PARSED BY THIS TOOL */
+
+  /*
+  {
+    "Name": "Fabric",
+    "Version": "1.5.0",
+    "LicenseUrl": "https://fabric.io/terms",
+    "License": "Please visit: https://fabric.io/terms",
+    "Authors": "Michel Moreira",
+    "ProjectUrl": "https://github.com/drungrin/Fabric.Sdk.Xamarin"
+  }
+  */
+]

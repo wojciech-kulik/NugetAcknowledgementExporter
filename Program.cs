@@ -31,16 +31,17 @@ namespace NugetAcknowledgementExporter
             }
 
             // FIND ALL CSPROJ FILES
-            Console.WriteLine($"Searching for CSPROJ files in {ProjectDirectory}...");
+            Console.WriteLine($"\n⌛️ Searching for CSPROJ files in {ProjectDirectory}...");
             var projects = FindAllCSProjs(ProjectDirectory);
-            Console.WriteLine($"Found {projects.Count} projects");
+            Console.WriteLine($"✅ Found {projects.Count} projects\n");
             if (projects.Count == 0)
             {
-                Console.WriteLine("Could not find any project file.");
+                Console.WriteLine("❌ Could not find any project file.");
                 return;
             }
 
             // PARSE NUGET PACKAGES
+            Console.WriteLine("⌛️ Searching for NuGet packages...");
             var includedPackages = projects
                 .SelectMany(path => GetIncludedPackages(path))
                 .Where(x => !IsExcluded(x))
@@ -49,16 +50,17 @@ namespace NugetAcknowledgementExporter
                 .ToList();
             if (includedPackages.Count == 0)
             {
-                Console.WriteLine("Could not find any NuGet packages.");
+                Console.WriteLine("❌ Could not find any NuGet packages.");
                 return;
             }
-            Console.WriteLine($"Detected {includedPackages.Count} nuget packages");
+            Console.WriteLine($"✅ Detected {includedPackages.Count} nuget packages\n");
 
             // DOWNLOAD LICENSES AND EXTRACT NUGET PACKAGE DETAILS
-            Console.WriteLine("Downloading licenses...");
+            Console.WriteLine("⌛️ Downloading licenses...");
             try
             {
                 await FillPackagesDetails(includedPackages);
+                Console.WriteLine("✅ Finished downloading licenses\n");
             }
             catch (Exception ex)
             {
@@ -66,21 +68,32 @@ namespace NugetAcknowledgementExporter
                 Console.WriteLine("Please check if `nuget` command line tool is installed");
             }
 
+            // INCLUDE PACKAGES FROM "include.json" file
+            Console.WriteLine("⌛️ Including custom packages...");
+            await IncludeCustomPackages(includedPackages);
+            includedPackages = includedPackages
+                .Distinct(new NugetPackageEqualityComparer())
+                .OrderBy(x => x.Name)
+                .ToList();
+
             // EXPORT JSON FILE
             if (GenerateJson)
             {
-                Console.WriteLine("Exporting project_packages.json...");
+                Console.WriteLine("⌛️ Exporting project_packages.json...");
                 ExportToJson(includedPackages);
+                Console.WriteLine("✅ Exported project_packages.json\n");
             }
 
             // EXPORT TXT FILE
             if (GenerateTxt)
             {
-                Console.WriteLine("Exporting acknowledgements.txt...");
+                Console.WriteLine("⌛️ Exporting acknowledgements.txt...");
                 ExportAcknowledgements(includedPackages);
+                Console.WriteLine("✅ Exported acknowledgements.txt\n");
             }
 
-            Console.WriteLine($"Finished exporting acknowledgements for {includedPackages.Count} packages");
+            Console.WriteLine($"🎉🎉 Finished exporting acknowledgements for {includedPackages.Count} packages");
+            Console.WriteLine($"🎉🎉 Output directory: {OutputDirectory}");
         }
 
         static bool ParseArguments(string[] args)
@@ -103,6 +116,7 @@ namespace NugetAcknowledgementExporter
                     Console.WriteLine("\nUsage: NugetAcknowledgementExporter <project directory> [args]");
                     Console.WriteLine("\nAvailable parameters:");
                     options.ToList().ForEach(x => Console.WriteLine($"\t{x.Prototype}\t\t{x.Description}"));
+                    Console.WriteLine("\nTo add custom licenses or packages please edit:\n- licenses/include.json\n- licenses/licenses.json");
                 }
 
                 return true;
@@ -122,13 +136,13 @@ namespace NugetAcknowledgementExporter
 
             if (string.IsNullOrWhiteSpace(globalPackages))
             {
-                throw new InvalidOperationException("Could not get NuGet cache directory (error: 1)");
+                throw new InvalidOperationException("❌ Could not get NuGet cache directory (error: 1)");
             }
 
             var path = globalPackages.Substring("global-packages: ".Length).Trim();
             if (!Directory.Exists(path))
             {
-                throw new InvalidOperationException("Could not get NuGet cache directory (error: 2)");
+                throw new InvalidOperationException("❌ Could not get NuGet cache directory (error: 2)");
             }
 
             return path;
@@ -217,17 +231,60 @@ namespace NugetAcknowledgementExporter
                     package.LicenseUrl = metadata["licenseUrl"].InnerText;
 
                     await ResolveUrls(package);
-                    await DownloadLicense(package);
+                    var licenses = await GetLicenses();
+                    await FillLicense(package, licenses);
+
+                    if (string.IsNullOrWhiteSpace(package.License))
+                    {
+                        await DownloadLicense(package);
+                    }
                 }
                 catch (XmlException)
                 {
-                    Console.WriteLine($"Could not parse NuSpec for {package.Name} (path: {specFilePath})");
+                    Console.WriteLine($"❌ Could not parse NuSpec for {package.Name} (path: {specFilePath})");
                 }
                 catch (HttpRequestException)
                 {
-                    Console.WriteLine($"Could not download license for {package.Name} (url: {package.LicenseUrl})");
+                    Console.WriteLine($"❌ Could not download license for {package.Name} (url: {package.LicenseUrl})");
                 }
             }
+        }
+
+        static async Task<List<License>> GetLicenses()
+        {
+            try
+            {
+                var licenses = await File.ReadAllTextAsync("licenses/licenses.json");
+                var list = JsonConvert.DeserializeObject<List<License>>(licenses);
+                return list;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Could not get licenses from licenses/licenses.json");
+                Console.WriteLine(ex.Message);
+                return new List<License>();
+            }
+        }
+
+        static async Task FillLicense(NugetPackage package, List<License> licenses)
+        {
+            var license = licenses.FirstOrDefault(x => x.PackageName != null && x.PackageName.ToLowerInvariant() == package.Name.ToLowerInvariant());
+            license ??= licenses.FirstOrDefault(x => x.LicenseUrl != null && x.LicenseUrl.ToLowerInvariant() == package.LicenseUrl.ToLowerInvariant());
+            if (license == null) return;
+
+            var path = license.File;
+            if (!Path.IsPathFullyQualified(path))
+            {
+                path = Path.Combine("licenses", path);
+            }
+
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"❌ License file: {path} does not exists");
+                return;
+            }
+
+            package.License = await File.ReadAllTextAsync(path);
         }
 
         static async Task ResolveUrls(NugetPackage package)
@@ -272,7 +329,31 @@ namespace NugetAcknowledgementExporter
 
             if (string.IsNullOrWhiteSpace(package.License) || package.License == "(custom)")
             {
-                Console.WriteLine($"Could not download license for {package.Name} (url: {package.LicenseUrl})");
+                Console.WriteLine($"❌ Could not download license for {package.Name} (url: {package.LicenseUrl})");
+            }
+        }
+
+        static async Task IncludeCustomPackages(List<NugetPackage> packages)
+        {
+            try
+            {
+                var content = await File.ReadAllTextAsync("licenses/include.json");
+                var include = JsonConvert.DeserializeObject<List<NugetPackage>>(content);
+                packages.AddRange(include);
+
+                if (include.Count == 0)
+                {
+                    Console.WriteLine("✅ No custom packages\n");
+                }
+                else
+                {
+                    Console.WriteLine($"✅ Included {include.Count} custom packages\n");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Could not include custom packages from `include.json` file");
+                Console.WriteLine(ex.Message);
             }
         }
 
