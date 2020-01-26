@@ -337,9 +337,9 @@ namespace NugetAcknowledgementExporter
             {
                 package.License = ApacheLicense(package.Authors);
             }
-            else if (lowerLicenseUrl.Contains("github.com") &&
-                     lowerLicenseUrl.EndsWith(".txt") &&
-                     lowerLicenseUrl.EndsWith(".md") &&
+            else if (lowerLicenseUrl.Contains("github.com") ||
+                     lowerLicenseUrl.EndsWith(".txt") ||
+                     lowerLicenseUrl.EndsWith(".md") ||
                      lowerLicenseUrl.Contains("raw.githubusercontent.com"))
             {
                 package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
