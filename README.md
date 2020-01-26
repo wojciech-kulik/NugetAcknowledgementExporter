@@ -115,5 +115,6 @@ of this software and associated documentation files (the "Software"), (...)
 ## TODO
 - [ ] More testing
 - [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache
+- [ ] Custom templates for `acknowledgements.txt`
 
 [![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg)](https://www.buymeacoffee.com/WojciechKulik)
