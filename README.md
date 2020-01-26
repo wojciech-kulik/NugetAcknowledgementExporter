@@ -111,4 +111,4 @@ of this software and associated documentation files (the "Software"), (...)
 
 ## TODO
 - [ ] More testing
-- [ ] ?
+- [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache
