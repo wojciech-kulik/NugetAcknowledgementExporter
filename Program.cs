@@ -122,11 +122,11 @@ namespace NugetAcknowledgementExporter
 
             foreach (var package in packages)
             {
+                var fileName = $"{package.Name.ToLower()}.nuspec";
+                var specFilePath = Path.Combine(nugetCache, package.Name.ToLower(), package.Version, fileName);
+
                 try
                 {
-                    var fileName = $"{package.Name.ToLower()}.nuspec";
-                    var specFilePath = Path.Combine(nugetCache, package.Name.ToLower(), package.Version, fileName);
-
                     var spec = new XmlDocument();
                     spec.Load(specFilePath);
                     var metadata = spec.DocumentElement["metadata"];
@@ -135,39 +135,59 @@ namespace NugetAcknowledgementExporter
                     package.ProjectUrl = metadata["projectUrl"].InnerText;
                     package.LicenseUrl = metadata["licenseUrl"].InnerText;
 
-                    using var httpClient = new HttpClient();
-
-                    var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.LicenseUrl));
-                    package.LicenseUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
-
-                    try
-                    {
-                        headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.ProjectUrl));
-                        package.ProjectUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
-                    }
-                    catch { }
-
-                    var lowerLicenseUrl = package.LicenseUrl.ToLowerInvariant();
-                    if (lowerLicenseUrl.Contains("licenses.nuget.org/mit"))
-                    {
-                        package.License = MITLicense(package.Authors);
-                    }
-                    else if (!lowerLicenseUrl.Contains("github.com") &&
-                             !lowerLicenseUrl.EndsWith(".txt") &&
-                             !lowerLicenseUrl.EndsWith(".md") &&
-                             !lowerLicenseUrl.Contains("raw.githubusercontent.com"))
-                    {
-                        package.License = "(custom)";
-                    }
-                    else
-                    {
-                        package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
-                    }
+                    await ResolveUrls(package);
+                    await DownloadLicense(package);
                 }
-                catch
+                catch (XmlException)
+                {
+                    Console.WriteLine($"Could not parse NuSpec for {package.Name} (path: {specFilePath})");
+                }
+                catch (HttpRequestException)
                 {
                     Console.WriteLine($"Could not download license for {package.Name} (url: {package.LicenseUrl})");
                 }
+            }
+        }
+
+        static async Task ResolveUrls(NugetPackage package)
+        {
+            using var httpClient = new HttpClient();
+
+            var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.LicenseUrl));
+            package.LicenseUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
+
+            try
+            {
+                headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.ProjectUrl));
+                package.ProjectUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
+            }
+            catch { }
+        }
+
+        static async Task DownloadLicense(NugetPackage package)
+        {
+            using var httpClient = new HttpClient();
+            var lowerLicenseUrl = package.LicenseUrl.ToLowerInvariant();
+
+            if (lowerLicenseUrl.Contains("licenses.nuget.org/mit"))
+            {
+                package.License = MITLicense(package.Authors);
+            }
+            else if (!lowerLicenseUrl.Contains("github.com") &&
+                     !lowerLicenseUrl.EndsWith(".txt") &&
+                     !lowerLicenseUrl.EndsWith(".md") &&
+                     !lowerLicenseUrl.Contains("raw.githubusercontent.com"))
+            {
+                package.License = "(custom)";
+            }
+            else
+            {
+                package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
+            }
+
+            if (string.IsNullOrWhiteSpace(package.License) || package.License == "(custom)")
+            {
+                Console.WriteLine($"Could not download license for {package.Name} (url: {package.LicenseUrl})");
             }
         }
 
