@@ -87,9 +87,9 @@ of this software and associated documentation files (the "Software"), (...)
 - [x] Extracting NuGet packages from `*.csproj`
 - [x] Extracting NuGet packages from `packages.json`
 - [x] Downloading licenses from `licenseUrl` (included in NuGet `nuspec` file)
-- [x] Adding custom licenses (edit file: `licenses.json`)
-- [x] Excluding packages (edit file: `exclude.json`)
-- [x] Including custom packages (edit file: `include.json`)
+- [x] Adding custom licenses (edit file: `licenses/licenses.json`)
+- [x] Excluding packages (edit file: `licenses/exclude.json`)
+- [x] Including custom packages (edit file: `licenses/include.json`)
 
 # TODO
 - [ ] More testing
