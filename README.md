@@ -4,7 +4,7 @@ This tool is responsible for extracting licenses from NuGet packages included in
 
 It can be used for auto-generating "Acknowledgement" page in your project.
 
-# Features
+## Features
 
 - [x] Detecting `*.csproj` files recursively in project directory
 - [x] Extracting NuGet packages from `*.csproj`
@@ -16,7 +16,7 @@ It can be used for auto-generating "Acknowledgement" page in your project.
 - [x] Including custom packages (edit file: `licenses/include.json`)
 - [x] Windows and MacOS support
 
-# Requirements
+## Requirements
 
 1. Download latest .NET Core
 ```
@@ -43,7 +43,7 @@ git clone https://github.com/wojciech-kulik/NugetAcknowledgementExporter.git
 dotnet run -- <args or --help>
 ```
 
-# Arguments
+## Arguments
 
 ```bash
 Usage: NugetAcknowledgementExporter <project directory> [args]
@@ -109,6 +109,6 @@ of this software and associated documentation files (the "Software"), (...)
 
 `project_packages.json` - containing all packages in JSON file, could be used for building custom "Acknowledgements" page within your project. It contains the following fields: `Name`, `Authors`, `Version`, `License`, `LicenseUrl`, `ProjectUrl`.
 
-# TODO
+## TODO
 - [ ] More testing
 - [ ] ?
