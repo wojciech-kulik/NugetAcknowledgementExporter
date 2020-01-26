@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>NugetAcknowledgementExporter</id>
+    <version>0.9.0</version>
+    <title>NugetAcknowledgementExporter</title>
+    <authors>Wojciech Kulik</authors>
+    <owners>Wojciech Kulik</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/wojciech-kulik/NugetAcknowledgementExporter</projectUrl>
+	<repository type="git" url="https://github.com/wojciech-kulik/NugetAcknowledgementExporter"/>
+    <description>This tool is responsible for extracting licenses from NuGet packages included in .NET projects. It can be used for auto-generating "Acknowledgement" page in your project.</description>
+    <releaseNotes>First release</releaseNotes>
+    <copyright>© Wojciech Kulik. All rights reserved.</copyright>
+    <tags>acknowledgement license export library</tags>
+  </metadata>
+  <files>
+    <file src="..\bin\Release\netcoreapp3.1\*.*" target="bin" exclude="**\*.log" />
+  </files>
+</package>
