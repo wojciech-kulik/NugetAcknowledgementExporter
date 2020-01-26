@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NDesk.Options;
+using System.Runtime.InteropServices;
 
 namespace NugetAcknowledgementExporter
 {
@@ -18,6 +19,25 @@ namespace NugetAcknowledgementExporter
         static bool GenerateJson = true;
         static bool GenerateTxt = true;
         static bool ShowHelp = false;
+
+        static string OkIcon 
+        {
+            get => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "[OK]" : "✅";
+        }
+
+        static string FailIcon
+        {
+            get => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "[FAILURE]" : "❌";
+        }
+
+        static string ProgressIcon
+        {
+            get => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "[IN PROGRESS]" : "⌛️";
+        }
+        static string SuccessIcon
+        {
+            get => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "[SUCCESS]" : "🎉🎉";
+        }
 
         static async Task Main(string[] args)
         {
@@ -31,17 +51,17 @@ namespace NugetAcknowledgementExporter
             }
 
             // FIND ALL CSPROJ FILES
-            Console.WriteLine($"\n⌛️ Searching for CSPROJ files in {ProjectDirectory}...");
+            Console.WriteLine($"\n{ProgressIcon} Searching for CSPROJ files in {ProjectDirectory}...");
             var projects = FindAllCSProjs(ProjectDirectory);
-            Console.WriteLine($"✅ Found {projects.Count} projects\n");
+            Console.WriteLine($"{OkIcon} Found {projects.Count} projects\n");
             if (projects.Count == 0)
             {
-                Console.WriteLine("❌ Could not find any project file.");
+                Console.WriteLine($"{FailIcon} Could not find any project file.");
                 return;
             }
 
             // PARSE NUGET PACKAGES
-            Console.WriteLine("⌛️ Searching for NuGet packages...");
+            Console.WriteLine($"{ProgressIcon} Searching for NuGet packages...");
             var includedPackages = projects
                 .SelectMany(path => GetIncludedPackages(path))
                 .Distinct(new NugetPackageEqualityComparer())
@@ -49,21 +69,21 @@ namespace NugetAcknowledgementExporter
                 .ToList();
             if (includedPackages.Count == 0)
             {
-                Console.WriteLine("❌ Could not find any NuGet packages.");
+                Console.WriteLine($"{FailIcon} Could not find any NuGet packages.");
                 return;
             }
-            Console.WriteLine($"✅ Detected {includedPackages.Count} nuget packages\n");
+            Console.WriteLine($"{OkIcon} Detected {includedPackages.Count} nuget packages\n");
 
             // EXCLUDE PACKAGES
-            Console.WriteLine("⌛️ Excluding packages...");
+            Console.WriteLine($"{ProgressIcon} Excluding packages...");
             await FilterOut(includedPackages);
 
             // DOWNLOAD LICENSES AND EXTRACT NUGET PACKAGE DETAILS
-            Console.WriteLine("⌛️ Downloading licenses...");
+            Console.WriteLine($"{ProgressIcon} Downloading licenses...");
             try
             {
                 await FillPackagesDetails(includedPackages);
-                Console.WriteLine("✅ Finished downloading licenses\n");
+                Console.WriteLine($"{OkIcon} Finished downloading licenses\n");
             }
             catch (Exception ex)
             {
@@ -72,7 +92,7 @@ namespace NugetAcknowledgementExporter
             }
 
             // INCLUDE PACKAGES FROM "include.json" file
-            Console.WriteLine("⌛️ Including custom packages...");
+            Console.WriteLine($"{ProgressIcon} Including custom packages...");
             await IncludeCustomPackages(includedPackages);
             includedPackages = includedPackages
                 .Distinct(new NugetPackageEqualityComparer())
@@ -82,21 +102,21 @@ namespace NugetAcknowledgementExporter
             // EXPORT JSON FILE
             if (GenerateJson)
             {
-                Console.WriteLine("⌛️ Exporting project_packages.json...");
+                Console.WriteLine($"{ProgressIcon} Exporting project_packages.json...");
                 ExportToJson(includedPackages);
-                Console.WriteLine("✅ Exported project_packages.json\n");
+                Console.WriteLine($"{OkIcon} Exported project_packages.json\n");
             }
 
             // EXPORT TXT FILE
             if (GenerateTxt)
             {
-                Console.WriteLine("⌛️ Exporting acknowledgements.txt...");
+                Console.WriteLine($"{ProgressIcon} Exporting acknowledgements.txt...");
                 ExportAcknowledgements(includedPackages);
-                Console.WriteLine("✅ Exported acknowledgements.txt\n");
+                Console.WriteLine($"{OkIcon} Exported acknowledgements.txt\n");
             }
 
-            Console.WriteLine($"🎉🎉 Finished exporting acknowledgements for {includedPackages.Count} packages");
-            Console.WriteLine($"🎉🎉 Output directory: {OutputDirectory}");
+            Console.WriteLine($"{SuccessIcon} Finished exporting acknowledgements for {includedPackages.Count} packages");
+            Console.WriteLine($"{SuccessIcon} Output directory: {OutputDirectory}");
         }
 
         static bool ParseArguments(string[] args)
@@ -139,13 +159,13 @@ namespace NugetAcknowledgementExporter
 
             if (string.IsNullOrWhiteSpace(globalPackages))
             {
-                throw new InvalidOperationException("❌ Could not get NuGet cache directory (error: 1)");
+                throw new InvalidOperationException($"{FailIcon} Could not get NuGet cache directory (error: 1)");
             }
 
             var path = globalPackages.Substring("global-packages: ".Length).Trim();
             if (!Directory.Exists(path))
             {
-                throw new InvalidOperationException("❌ Could not get NuGet cache directory (error: 2)");
+                throw new InvalidOperationException($"{FailIcon} Could not get NuGet cache directory (error: 2)");
             }
 
             return path;
@@ -218,7 +238,7 @@ namespace NugetAcknowledgementExporter
             }
             catch (Exception ex)
             {
-                Console.WriteLine("❌ Could not get filters from licenses/exclude.json");
+                Console.WriteLine($"{FailIcon} Could not get filters from licenses/exclude.json");
                 Console.WriteLine(ex.Message);
                 return new List<Filter>();
             }
@@ -230,7 +250,7 @@ namespace NugetAcknowledgementExporter
             var filters = await GetFilters();
 
             packages.RemoveAll(package => filters.Any(filter => filter.Matches(package)));
-            Console.WriteLine($"✅ Excluded {counter - packages.Count} nuget packages\n");
+            Console.WriteLine($"{OkIcon} Excluded {counter - packages.Count} nuget packages\n");
         }
 
         static async Task FillPackagesDetails(List<NugetPackage> packages)
@@ -241,6 +261,12 @@ namespace NugetAcknowledgementExporter
             {
                 var fileName = $"{package.Name.ToLower()}.nuspec";
                 var specFilePath = Path.Combine(nugetCache, package.Name.ToLower(), package.Version, fileName);
+
+                if (!File.Exists(specFilePath))
+                {
+                    Console.WriteLine($"{FailIcon} nuspec file does not exist: {specFilePath}");
+                    continue;
+                }
 
                 try
                 {
@@ -263,11 +289,11 @@ namespace NugetAcknowledgementExporter
                 }
                 catch (XmlException)
                 {
-                    Console.WriteLine($"❌ Could not parse NuSpec for {package.Name} (path: {specFilePath})");
+                    Console.WriteLine($"{FailIcon} Could not parse NuSpec for {package.Name} (path: {specFilePath})");
                 }
                 catch
                 {
-                    Console.WriteLine($"❌ Could not get license for {package.Name} (url: {package.LicenseUrl})");
+                    Console.WriteLine($"{FailIcon} Could not get license for {package.Name} (url: {package.LicenseUrl})");
                 }
             }
         }
@@ -282,7 +308,7 @@ namespace NugetAcknowledgementExporter
             }
             catch (Exception ex)
             {
-                Console.WriteLine("❌ Could not get licenses from licenses/licenses.json");
+                Console.WriteLine($"{FailIcon} Could not get licenses from licenses/licenses.json");
                 Console.WriteLine(ex.Message);
                 return new List<License>();
             }
@@ -302,7 +328,7 @@ namespace NugetAcknowledgementExporter
 
             if (!File.Exists(path))
             {
-                Console.WriteLine($"❌ License file: {path} does not exists");
+                Console.WriteLine($"{FailIcon} License file: {path} does not exists");
                 return;
             }
 
@@ -347,7 +373,7 @@ namespace NugetAcknowledgementExporter
 
             if (string.IsNullOrWhiteSpace(package.License))
             {
-                Console.WriteLine($"❌ Could not download license for {package.Name} (url: {package.LicenseUrl})");
+                Console.WriteLine($"{FailIcon} Could not download license for {package.Name} (url: {package.LicenseUrl})");
             }
         }
 
@@ -361,16 +387,16 @@ namespace NugetAcknowledgementExporter
 
                 if (include.Count == 0)
                 {
-                    Console.WriteLine("✅ No custom packages\n");
+                    Console.WriteLine($"{OkIcon} No custom packages\n");
                 }
                 else
                 {
-                    Console.WriteLine($"✅ Included {include.Count} custom packages\n");
+                    Console.WriteLine($"{OkIcon} Included {include.Count} custom packages\n");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("❌ Could not include custom packages from `include.json` file");
+                Console.WriteLine($"{FailIcon} Could not include custom packages from `include.json` file");
                 Console.WriteLine(ex.Message);
             }
         }
@@ -378,7 +404,7 @@ namespace NugetAcknowledgementExporter
         static List<NugetPackage> GroupPackages(List<NugetPackage> packages)
         {
             var grouped = packages
-                .GroupBy(x => string.Join("|", x.LicenseUrl, x.ProjectUrl.TrimEnd('/', ' '), x.Authors))
+                .GroupBy(x => string.Join("|", x.LicenseUrl, x.ProjectUrl?.TrimEnd('/', ' '), x.Authors))
                 .Select(x => new NugetPackage
                 {
                     Name = string.Join("\n", x.Select(x => x.Name)),
@@ -390,7 +416,7 @@ namespace NugetAcknowledgementExporter
                 .OrderBy(x => x.Name)
                 .ToList();
 
-            Console.WriteLine($"✅ Grouping finished -> {grouped.Count} packages");
+            Console.WriteLine($"{OkIcon} Grouping finished -> {grouped.Count} packages");
 
             return grouped;
         }

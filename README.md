@@ -14,6 +14,20 @@ It can be used for auto-generating "Acknowledgement" page in your project.
 - [x] Adding custom licenses (edit file: `licenses/licenses.json`)
 - [x] Excluding packages (edit file: `licenses/exclude.json`)
 - [x] Including custom packages (edit file: `licenses/include.json`)
+- [x] Windows and MacOS support
+
+# Requirements
+
+1. Download latest .NET Core
+```
+https://dotnet.microsoft.com/download/
+```
+
+2. Download latest NuGet commandline tool
+```
+Windows: https://www.nuget.org/downloads (+ add to PATH)
+MacOS: brew install nuget
+```
 
 ## Usage
 
@@ -22,7 +36,9 @@ It can be used for auto-generating "Acknowledgement" page in your project.
 git clone https://github.com/wojciech-kulik/NugetAcknowledgementExporter.git
 ```
 
-2. Build & run:
+2. Restore NuGet packages for all projects. Application uses NuGet cache, so it needs to be there.
+
+3. Build & run:
 ```bash
 dotnet run -- <args or --help>
 ```
@@ -48,7 +64,7 @@ To add custom licenses or packages please edit:
 ## Sample command
 
 ```bash
-dotnet run -- "/Users/YYY/repositories/my-project/source" -output="/Users/YYY/Desktop/"
+dotnet run -- "/Users/YYY/repositories/my-project/source" -output="/Users/YYY/Desktop"
 ```
 
 or once it's built, you can navigate to binary and run it directly: 
