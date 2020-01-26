@@ -274,9 +274,9 @@ namespace NugetAcknowledgementExporter
                     spec.Load(specFilePath);
                     var metadata = spec.DocumentElement["metadata"];
 
-                    package.Authors = metadata["authors"].InnerText;
-                    package.ProjectUrl = metadata["projectUrl"].InnerText;
-                    package.LicenseUrl = metadata["licenseUrl"].InnerText;
+                    package.Authors = metadata["authors"]?.InnerText;
+                    package.ProjectUrl = metadata["projectUrl"]?.InnerText;
+                    package.LicenseUrl = metadata["licenseUrl"]?.InnerText;
 
                     await ResolveUrls(package);
                     var licenses = await GetLicenses();
@@ -316,8 +316,8 @@ namespace NugetAcknowledgementExporter
 
         static async Task FillLicense(NugetPackage package, List<License> licenses)
         {
-            var license = licenses.FirstOrDefault(x => x.PackageName != null && x.PackageName.ToLowerInvariant() == package.Name.ToLowerInvariant());
-            license ??= licenses.FirstOrDefault(x => x.LicenseUrl != null && x.LicenseUrl.ToLowerInvariant() == package.LicenseUrl.ToLowerInvariant());
+            var license = licenses.FirstOrDefault(x => package.Name != null && x.PackageName != null && x.PackageName.ToLowerInvariant() == package.Name.ToLowerInvariant());
+            license ??= licenses.FirstOrDefault(x => package.LicenseUrl != null && x.LicenseUrl != null && x.LicenseUrl.ToLowerInvariant() == package.LicenseUrl.ToLowerInvariant());
             if (license == null) return;
 
             var path = license.File;
@@ -339,19 +339,31 @@ namespace NugetAcknowledgementExporter
         {
             using var httpClient = new HttpClient();
 
-            var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.LicenseUrl));
-            package.LicenseUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
-
-            try
+            if (!string.IsNullOrEmpty(package.LicenseUrl))
             {
-                headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.ProjectUrl));
-                package.ProjectUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
+                var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.LicenseUrl));
+                package.LicenseUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
             }
-            catch { }
+
+            if (!string.IsNullOrEmpty(package.ProjectUrl))
+            {
+                try
+                {
+                    var headRequest = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, package.ProjectUrl));
+                    package.ProjectUrl = headRequest.RequestMessage.RequestUri.AbsoluteUri;
+                }
+                catch { }
+            }
         }
 
         static async Task DownloadLicense(NugetPackage package)
         {
+            if (string.IsNullOrEmpty(package.LicenseUrl))
+            {
+                Console.WriteLine($"{FailIcon} Missing license for {package.Name}");
+                return;
+            }
+
             using var httpClient = new HttpClient();
             var lowerLicenseUrl = package.LicenseUrl.ToLowerInvariant();
 
