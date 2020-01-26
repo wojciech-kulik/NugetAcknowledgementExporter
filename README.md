@@ -4,6 +4,17 @@ This tool is responsible for extracting licenses from NuGet packages included in
 
 It can be used for auto-generating "Acknowledgement" page in your project.
 
+# Features
+
+- [x] Detecting `*.csproj` files recursively in project directory
+- [x] Extracting NuGet packages from `*.csproj`
+- [x] Extracting NuGet packages from `packages.json`
+- [x] Grouping packages with the same authors, projectUrl and licenseUrl
+- [x] Downloading licenses from `licenseUrl` (included in NuGet `nuspec` file)
+- [x] Adding custom licenses (edit file: `licenses/licenses.json`)
+- [x] Excluding packages (edit file: `licenses/exclude.json`)
+- [x] Including custom packages (edit file: `licenses/include.json`)
+
 ## Usage
 
 1. Download code:
@@ -81,15 +92,6 @@ of this software and associated documentation files (the "Software"), (...)
 ```
 
 `project_packages.json` - containing all packages in JSON file, could be used for building custom "Acknowledgements" page within your project. It contains the following fields: `Name`, `Authors`, `Version`, `License`, `LicenseUrl`, `ProjectUrl`.
-
-# Features
-- [x] Detecting `*.csproj` files recursively in project directory
-- [x] Extracting NuGet packages from `*.csproj`
-- [x] Extracting NuGet packages from `packages.json`
-- [x] Downloading licenses from `licenseUrl` (included in NuGet `nuspec` file)
-- [x] Adding custom licenses (edit file: `licenses/licenses.json`)
-- [x] Excluding packages (edit file: `licenses/exclude.json`)
-- [x] Including custom packages (edit file: `licenses/include.json`)
 
 # TODO
 - [ ] More testing

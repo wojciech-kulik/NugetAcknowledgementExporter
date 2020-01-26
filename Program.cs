@@ -342,7 +342,7 @@ namespace NugetAcknowledgementExporter
                      lowerLicenseUrl.EndsWith(".md") ||
                      lowerLicenseUrl.Contains("raw.githubusercontent.com"))
             {
-                package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
+                package.License = (await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/")))?.Trim();
             }
 
             if (string.IsNullOrWhiteSpace(package.License))
@@ -375,6 +375,26 @@ namespace NugetAcknowledgementExporter
             }
         }
 
+        static List<NugetPackage> GroupPackages(List<NugetPackage> packages)
+        {
+            var grouped = packages
+                .GroupBy(x => string.Join("|", x.LicenseUrl, x.ProjectUrl.TrimEnd('/', ' '), x.Authors))
+                .Select(x => new NugetPackage
+                {
+                    Name = string.Join("\n", x.Select(x => x.Name)),
+                    Authors = x.First().Authors,
+                    LicenseUrl = x.First().LicenseUrl,
+                    ProjectUrl = x.First().ProjectUrl,
+                    License = x.First().License
+                })
+                .OrderBy(x => x.Name)
+                .ToList();
+
+            Console.WriteLine($"✅ Grouping finished -> {grouped.Count} packages");
+
+            return grouped;
+        }
+
         static void ExportToJson(List<NugetPackage> packages)
         {
             var json = JsonConvert.SerializeObject(packages, Newtonsoft.Json.Formatting.Indented);
@@ -385,8 +405,9 @@ namespace NugetAcknowledgementExporter
         static void ExportAcknowledgements(List<NugetPackage> packages)
         {
             var result = "";
+            var groupedPackages = GroupPackages(packages);
 
-            foreach (var package in packages)
+            foreach (var package in groupedPackages)
             {
                 if (result != "")
                 {
