@@ -44,7 +44,6 @@ namespace NugetAcknowledgementExporter
             Console.WriteLine("⌛️ Searching for NuGet packages...");
             var includedPackages = projects
                 .SelectMany(path => GetIncludedPackages(path))
-                .Where(x => !IsExcluded(x))
                 .Distinct(new NugetPackageEqualityComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
@@ -54,6 +53,10 @@ namespace NugetAcknowledgementExporter
                 return;
             }
             Console.WriteLine($"✅ Detected {includedPackages.Count} nuget packages\n");
+
+            // EXCLUDE PACKAGES
+            Console.WriteLine("⌛️ Excluding packages...");
+            await FilterOut(includedPackages);
 
             // DOWNLOAD LICENSES AND EXTRACT NUGET PACKAGE DETAILS
             Console.WriteLine("⌛️ Downloading licenses...");
@@ -116,7 +119,7 @@ namespace NugetAcknowledgementExporter
                     Console.WriteLine("\nUsage: NugetAcknowledgementExporter <project directory> [args]");
                     Console.WriteLine("\nAvailable parameters:");
                     options.ToList().ForEach(x => Console.WriteLine($"\t{x.Prototype}\t\t{x.Description}"));
-                    Console.WriteLine("\nTo add custom licenses or packages please edit:\n- licenses/include.json\n- licenses/licenses.json");
+                    Console.WriteLine("\nTo add custom licenses or packages please edit:\n- licenses/licenses.json\n- licenses/include.json\n- licenses/exclude.json");
                 }
 
                 return true;
@@ -205,10 +208,29 @@ namespace NugetAcknowledgementExporter
             return packages;
         }
 
-        static bool IsExcluded(NugetPackage package)
+        static async Task<List<Filter>> GetFilters()
         {
-            var excluded = new[] { "Microsoft", "System", "NETStandard", "runtime." };
-            return excluded.Any(x => package.Name.StartsWith(x));
+            try
+            {
+                var content = await File.ReadAllTextAsync("licenses/exclude.json");
+                var filters = JsonConvert.DeserializeObject<List<Filter>>(content);
+                return filters;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Could not get filters from licenses/exclude.json");
+                Console.WriteLine(ex.Message);
+                return new List<Filter>();
+            }
+        }
+
+        static async Task FilterOut(List<NugetPackage> packages)
+        {
+            var counter = packages.Count;
+            var filters = await GetFilters();
+
+            packages.RemoveAll(package => filters.Any(filter => filter.Matches(package)));
+            Console.WriteLine($"✅ Excluded {counter - packages.Count} nuget packages\n");
         }
 
         static async Task FillPackagesDetails(List<NugetPackage> packages)
@@ -243,9 +265,9 @@ namespace NugetAcknowledgementExporter
                 {
                     Console.WriteLine($"❌ Could not parse NuSpec for {package.Name} (path: {specFilePath})");
                 }
-                catch (HttpRequestException)
+                catch
                 {
-                    Console.WriteLine($"❌ Could not download license for {package.Name} (url: {package.LicenseUrl})");
+                    Console.WriteLine($"❌ Could not get license for {package.Name} (url: {package.LicenseUrl})");
                 }
             }
         }
@@ -315,19 +337,15 @@ namespace NugetAcknowledgementExporter
             {
                 package.License = ApacheLicense(package.Authors);
             }
-            else if (!lowerLicenseUrl.Contains("github.com") &&
-                     !lowerLicenseUrl.EndsWith(".txt") &&
-                     !lowerLicenseUrl.EndsWith(".md") &&
-                     !lowerLicenseUrl.Contains("raw.githubusercontent.com"))
-            {
-                package.License = "(custom)";
-            }
-            else
+            else if (lowerLicenseUrl.Contains("github.com") &&
+                     lowerLicenseUrl.EndsWith(".txt") &&
+                     lowerLicenseUrl.EndsWith(".md") &&
+                     lowerLicenseUrl.Contains("raw.githubusercontent.com"))
             {
                 package.License = await httpClient.GetStringAsync(package.LicenseUrl.Replace("/blob/", "/raw/"));
             }
 
-            if (string.IsNullOrWhiteSpace(package.License) || package.License == "(custom)")
+            if (string.IsNullOrWhiteSpace(package.License))
             {
                 Console.WriteLine($"❌ Could not download license for {package.Name} (url: {package.LicenseUrl})");
             }

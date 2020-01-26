@@ -11,5 +11,9 @@
 	{
 		"licenseUrl": "https://fabric.io/terms", /* matching by license url */
 		"file": "fabric.txt"
+	},
+	{
+		"packageName": "Xamarin.Google.iOS.Maps",
+		"file": "netFoundationMIT.txt"
 	}
 ]

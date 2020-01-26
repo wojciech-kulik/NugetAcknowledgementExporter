@@ -1,0 +1,24 @@
+﻿[
+  /* YOU CAN ADD HERE RULES TO EXCLUDE SOME NUGET PACKAGES */
+
+  /*
+  {
+    "nameContains": ""
+  },
+  {
+    "nameEquals": ""
+  },
+  */
+  {
+    "nameStartsWith": "Microsoft"
+  },
+  {
+    "nameStartsWith": "System"
+  },
+  {
+    "nameStartsWith": "NETStandard"
+  },
+  {
+    "nameStartsWith": "runtime."
+  }
+]
