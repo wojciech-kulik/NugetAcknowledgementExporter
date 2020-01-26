@@ -1,5 +1,7 @@
 # NugetAcknowledgementExporter
 
+![version](https://img.shields.io/badge/version-0.9.1-green) [![NuGet](https://img.shields.io/badge/NuGet-0.9.1-blue.svg)](https://www.nuget.org/packages/NugetAcknowledgementExporter/) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wojciech-kulik/NugetAcknowledgementExporter/blob/master/LICENSE/)
+
 This tool is responsible for extracting licenses from NuGet packages included in .NET projects.  
 
 It can be used for auto-generating "Acknowledgement" page in your project.
