@@ -10,8 +10,8 @@ Usage of Third-Party Libraries usually requires to include licenses within an ap
 
 NugetAcknowledgementsExporter finds all CSPROJs in a directory from the argument, extracts all included NuGet packages and downloads their licenses. Based on gained data it builds two files:
 
-- acknowledgements.txt – text file containing all acknowledgements for NuGet packages. It could be directly included within your application in a scrollable text field.
-- project_packages.json – JSON file containing an array of used NuGet packages including downloaded licenses. It could be used to build a more interesting UI for acknowledgements, generated from code based on this file.
+- **acknowledgements.txt** – text file containing all acknowledgements for NuGet packages. It could be directly included within your application in a scrollable text field.
+- **project_packages.json** – JSON file containing an array of used NuGet packages including downloaded licenses. It could be used to build a more interesting UI for acknowledgements, generated from code based on this file.
 
 ## Features
 
@@ -118,6 +118,7 @@ of this software and associated documentation files (the "Software"), (...)
 
 ## TODO
 - [ ] More testing
+- [ ] Code refactoring - split `Program.cs` into classes
 - [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache
 - [ ] Custom templates for `acknowledgements.txt`
 - [ ] Recognizing popular URLs with well-known licenses (like already done for: opensource.org/licenses/mit and licenses.nuget.org/mit)
