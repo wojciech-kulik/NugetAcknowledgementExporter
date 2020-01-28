@@ -1,10 +1,17 @@
+[![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg)](https://www.buymeacoffee.com/WojciechKulik)
+
 # Nuget Acknowledgement Exporter
 
 ![version](https://img.shields.io/badge/version-0.9.1-green) [![NuGet](https://img.shields.io/badge/NuGet-0.9.1-blue.svg)](https://www.nuget.org/packages/NugetAcknowledgementExporter/) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wojciech-kulik/NugetAcknowledgementExporter/blob/master/LICENSE/)
 
-This tool is responsible for extracting licenses from NuGet packages included in .NET projects.  
+Small tool responsible for extracting licenses from NuGet packages included in .NET projects.
 
-It can be used for auto-generating "Acknowledgement" page in your project.
+Usage of Third-Party Libraries usually requires to include licenses within an application. This command-line tool can be used for auto-generating the “Acknowledgement” / “Third-Party Libraries” page in your project.
+
+NugetAcknowledgementsExporter finds all CSPROJs in a directory from the argument, extracts all included NuGet packages and downloads their licenses. Based on gained data it builds two files:
+
+- acknowledgements.txt – text file containing all acknowledgements for NuGet packages. It could be directly included within your application in a scrollable text field.
+- project_packages.json – JSON file containing an array of used NuGet packages including downloaded licenses. It could be used to build a more interesting UI for acknowledgements, generated from code based on this file.
 
 ## Features
 
@@ -76,8 +83,7 @@ MacOS: ./NugetAcknowledgementExporter "/Users/YYY/repositories/my-project/source
 Windows: NugetAcknowledgementExporter "C:\Users\YYY\repositories\my-project\source" -output="C:\Users\YYY\Desktop"
 ```
 
-## Output
-`acknowledgements.txt` - containing all packages and licenses ready to be included within your project. Example:
+## Sample Output
 ```
 Plugin.Permissions
 
@@ -110,13 +116,9 @@ of this software and associated documentation files (the "Software"), (...)
 (...)
 ```
 
-`project_packages.json` - containing all packages in JSON file, could be used for building custom "Acknowledgements" page within your project. It contains the following fields: `Name`, `Authors`, `Version`, `License`, `LicenseUrl`, `ProjectUrl`.
-
 ## TODO
 - [ ] More testing
 - [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache
 - [ ] Custom templates for `acknowledgements.txt`
 - [ ] Recognizing popular URLs with well-known licenses (like already done for: opensource.org/licenses/mit and licenses.nuget.org/mit)
 - [ ] Automatic run when `dotnet restore` or `nuget restore` called (if possible?)
-
-[![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg)](https://www.buymeacoffee.com/WojciechKulik)
