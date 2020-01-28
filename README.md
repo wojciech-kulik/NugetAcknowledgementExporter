@@ -1,4 +1,4 @@
-# NugetAcknowledgementExporter
+# Nuget Acknowledgement Exporter
 
 ![version](https://img.shields.io/badge/version-0.9.1-green) [![NuGet](https://img.shields.io/badge/NuGet-0.9.1-blue.svg)](https://www.nuget.org/packages/NugetAcknowledgementExporter/) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wojciech-kulik/NugetAcknowledgementExporter/blob/master/LICENSE/)
 
@@ -116,5 +116,7 @@ of this software and associated documentation files (the "Software"), (...)
 - [ ] More testing
 - [ ] Download and cache nuspec from https://www.nuget.org/api/v2/package/{packageID} instead of relying on NuGet's cache
 - [ ] Custom templates for `acknowledgements.txt`
+- [ ] Recognizing popular URLs with well-known licenses (like already done for: opensource.org/licenses/mit and licenses.nuget.org/mit)
+- [ ] Automatic run when `dotnet restore` or `nuget restore` called (if possible?)
 
 [![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg)](https://www.buymeacoffee.com/WojciechKulik)
